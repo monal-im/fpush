@@ -159,9 +159,13 @@ mod tests {
         max_execution_time: Duration,
     ) {
         let now = Instant::now();
-        let send_push = tr.lookup_ratelimit(key).await;
+        let send_push = tr.lookup_ratelimit(key.clone()).await;
         let time_needed = now.elapsed();
-        assert_eq!(send_push, send_push_expected);
+        assert_eq!(
+            send_push, send_push_expected,
+            "Expected {} but received {}, {}, {:?}, {:?}",
+            send_push_expected, send_push, key, min_execution_time, max_execution_time
+        );
         assert!(
             time_needed + Duration::from_millis(100) > min_execution_time,
             "expected at least {}ms delay, but only {}ms were used",
@@ -182,7 +186,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn insert() {
+    async fn token_length_check() {
         const T_BETWEEN_PUSHES: Duration = Duration::from_secs(10);
         let tr = FpushTokenRateLimit::new(&RatelimitSettings {
             hard_ratelimit_time: Duration::from_secs(10),
@@ -192,7 +196,27 @@ mod tests {
         });
         check_lookup(
             &tr,
-            "hello".to_owned(),
+            "shortToken".to_owned(),
+            false,
+            Duration::from_secs(0),
+            Duration::from_millis(100),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn insert() {
+        let token = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz".to_string();
+        const T_BETWEEN_PUSHES: Duration = Duration::from_secs(10);
+        let tr = FpushTokenRateLimit::new(&RatelimitSettings {
+            hard_ratelimit_time: Duration::from_secs(10),
+            ratelimit_time: T_BETWEEN_PUSHES,
+            ratelimit_cleanup_interval: Duration::from_secs(180),
+            ..Default::default()
+        });
+        check_lookup(
+            &tr,
+            token.clone(),
             true,
             Duration::from_secs(0),
             Duration::from_millis(100),
@@ -200,7 +224,7 @@ mod tests {
         .await;
         check_lookup(
             &tr,
-            "hello".to_owned(),
+            token.clone(),
             true,
             T_BETWEEN_PUSHES,
             Duration::from_secs(12),
@@ -222,6 +246,7 @@ mod tests {
 
     #[tokio::test]
     async fn ratelimit_sequential() {
+        let token = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz".to_string();
         const T_BETWEEN_PUSHES: Duration = Duration::from_secs(5);
         let tr = FpushTokenRateLimit::new(&RatelimitSettings {
             hard_ratelimit_time: Duration::from_secs(40),
@@ -232,7 +257,7 @@ mod tests {
         // sequential calls to ratelimit should allways return true == send a push
         check_lookup(
             &tr,
-            "hello".to_owned(),
+            token.clone(),
             true,
             Duration::from_secs(0),
             Duration::from_millis(100),
@@ -241,7 +266,7 @@ mod tests {
         for _i in 0..=4 {
             check_lookup(
                 &tr,
-                "hello".to_owned(),
+                token.clone(),
                 true,
                 T_BETWEEN_PUSHES,
                 T_BETWEEN_PUSHES + Duration::from_millis(100),
