@@ -1,0 +1,48 @@
+[package]
+name = "fpush-push"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "^0.4"
+
+derive-getters = "^0.2"
+
+serde_derive = "^1.0"
+serde = { version = "^1.0", features = ["derive"] }
+serde-humantime = "^0.1"
+
+tokio = { version = "^1.0", features = ["time"] }
+futures = "^0.3"
+derive_more = "^0.99"
+
+dashmap = "^5.2"
+
+rand = { version = "^0.8", features = ["std_rng"], optional = true }
+
+async-trait = "^0.1"
+
+fpush-ratelimit = { path = "../fpush-ratelimit" }
+fpush-tokenblocker = { path = "../fpush-tokenblocker" }
+
+fpush-traits = { path = "../fpush-traits" }
+fpush-apns = { path = "../fpush-apns", optional = true }
+fpush-fcm = { path = "../fpush-fcm", optional = true }
+fpush-demopush = { path = "../fpush-demopush", optional = true }
+
+[features]
+release_max_level_warn = ["log/release_max_level_warn"]
+release_max_level_info = ["log/release_max_level_info"]
+
+random_delay_before_push = ["rand"]
+
+enable_fcm_support = ["fpush-fcm"]
+enable_apns_support = ["fpush-apns"]
+enable_demo_support = ["fpush-demopush"]
+
+monal_prod = ["random_delay_before_push", "release_max_level_info", "enable_apns_support"]
+monal_debug = ["random_delay_before_push", "enable_apns_support", "enable_fcm_support"]
+
+default = ["monal_debug"]
