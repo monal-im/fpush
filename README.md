@@ -175,11 +175,15 @@ Bundle ID of the main app.
 
 This section describes all fcm related push options.
 
-##### `fcmSecretPath``
+##### `fcmSecretPath`
 
 Path to the fcm json file created by google.
 
 ### `timeoutConfig`
+
+#### `xmppconnectionError`
+
+Time to wait after XMPP component connection failed before reconnecting
 
 <a name="structure"></a>
 ## Structure

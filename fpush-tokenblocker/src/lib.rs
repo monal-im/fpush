@@ -45,16 +45,14 @@ impl FpushBlocklistValue {
 
 pub struct FpushBlocklist {
     token_blocklist: DashMap<String, FpushBlocklistValue>,
-    block_time: Duration,
-    extended_block_time: Duration,
+    blacklist_config: BlacklistSettings,
 }
 
 impl FpushBlocklist {
-    pub fn new(config: &BlacklistSettings) -> Self {
+    pub fn new(blacklist_config: &BlacklistSettings) -> Self {
         Self {
             token_blocklist: DashMap::new(),
-            block_time: config.normal_blacklisting(),
-            extended_block_time: config.extended_blacklisting(),
+            blacklist_config: *blacklist_config,
         }
     }
 
@@ -63,7 +61,8 @@ impl FpushBlocklist {
         if let Some(mut blocklist_entry) = self.token_blocklist.get_mut(token) {
             if let Ok(timestamp) = SystemTime::now().duration_since(UNIX_EPOCH) {
                 if blocklist_entry.is_blocked(&timestamp) {
-                    blocklist_entry.extend_block(&timestamp, &self.extended_block_time);
+                    blocklist_entry
+                        .extend_block(&timestamp, self.blacklist_config.block_extension());
                     true
                 } else {
                     false
@@ -81,22 +80,36 @@ impl FpushBlocklist {
         self.is_blocked_token(token)
     }
 
-    pub fn block(&self, token: String) {
+    pub fn block_invalid_token(&self, token: String) {
+        self.block_internal(
+            token,
+            &self.blacklist_config.invalid_token().inital_blocking(),
+            &self.blacklist_config.invalid_token().extended_blocking(),
+        )
+    }
+
+    pub fn block_after_unhandled_push_error(&self, token: String) {
+        self.block_internal(
+            token,
+            &self.blacklist_config.push_error().inital_blocking(),
+            &self.blacklist_config.push_error().extended_blocking(),
+        )
+    }
+
+    fn block_internal(&self, token: String, block_time: &Duration, extended_block_time: &Duration) {
         if let Ok(timestamp) = SystemTime::now().duration_since(UNIX_EPOCH) {
             if let Some(mut blocklist_entry) = self.token_blocklist.get_mut(&token) {
                 if blocklist_entry.is_blocked(&timestamp) {
                     info!("Extending block time of token {}", token);
-                    blocklist_entry.extend_block(&timestamp, &self.extended_block_time);
+                    blocklist_entry.extend_block(&timestamp, extended_block_time);
                 } else {
                     info!("Reblocking token {}", token);
-                    blocklist_entry.block_and_reset(&timestamp, &self.block_time);
+                    blocklist_entry.block_and_reset(&timestamp, block_time);
                 }
             } else {
                 info!("Blocking token {}", token);
-                self.token_blocklist.insert(
-                    token,
-                    FpushBlocklistValue::new(&timestamp, &self.block_time),
-                );
+                self.token_blocklist
+                    .insert(token, FpushBlocklistValue::new(&timestamp, block_time));
             }
         } else {
             error!("Could not get current SystemTime");
@@ -117,41 +130,49 @@ impl FpushBlocklist {
 mod tests {
     use std::{thread::sleep, time::Duration};
 
-    use crate::{BlacklistSettings, FpushBlocklist};
+    use crate::{config::BlacklistBlockingTimes, BlacklistSettings, FpushBlocklist};
 
     #[test]
     fn extended_blocking() {
-        let settings = BlacklistSettings::new(Duration::from_secs(10), Duration::from_secs(20));
+        let settings = BlacklistSettings::new_debug_config(
+            BlacklistBlockingTimes::new(Duration::from_secs(10), Duration::from_secs(20)),
+            BlacklistBlockingTimes::default(),
+            Duration::from_secs(5),
+        );
         let blocklist = FpushBlocklist::new(&settings);
 
         // check random token
         assert!(!blocklist.is_blocked_token("some-token"));
 
         // block token
-        blocklist.block("some-token".to_string());
-        assert!(blocklist.is_blocked_token("some-token"));
+        blocklist.block_invalid_token("some-token".to_string()); // 10s
+        blocklist.block_invalid_token("some-token".to_string()); // + 20s
 
         sleep(Duration::from_secs(9));
-        assert!(blocklist.is_blocked_token("some-token"));
-        sleep(Duration::from_secs(22));
+        assert!(blocklist.is_blocked_token("some-token")); // +5s
+        sleep(Duration::from_secs(30));
         assert!(!blocklist.is_blocked_token("some-token"));
         assert!(!blocklist.is_blocked_token("some-token"));
     }
 
     #[test]
     fn is_blocked() {
-        let settings = BlacklistSettings::new(Duration::from_secs(10), Duration::from_secs(20));
+        let settings = BlacklistSettings::new_debug_config(
+            BlacklistBlockingTimes::new(Duration::from_secs(10), Duration::from_secs(20)),
+            BlacklistBlockingTimes::default(),
+            Duration::from_secs(10),
+        );
         let blocklist = FpushBlocklist::new(&settings);
 
         assert!(!blocklist.is_blocked("some-token"));
 
         // block token
-        blocklist.block("some-token".to_string());
-        assert!(blocklist.is_blocked("some-token"));
+        blocklist.block_invalid_token("some-token".to_string()); // 10s
+        assert!(blocklist.is_blocked("some-token")); // + 5s
 
         sleep(Duration::from_secs(9));
-        assert!(blocklist.is_blocked("some-token"));
-        sleep(Duration::from_secs(22));
+        assert!(blocklist.is_blocked("some-token")); // + 5s
+        sleep(Duration::from_secs(15));
         assert!(!blocklist.is_blocked("some-token"));
         assert!(!blocklist.is_blocked("some-token"));
     }

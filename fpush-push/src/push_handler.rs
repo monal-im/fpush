@@ -33,14 +33,15 @@ pub async fn handle_push_request(
                     push_module.identifier(),
                     token,
                 );
-                push_module.blocklist().block(token);
+                push_module.blocklist().block_invalid_token(token);
                 Err(PushRequestError::TokenBlocked)
             }
             Err(PushError::TokenRateLimited) => {
-                // TODO ratelimit hard
                 push_module.ratelimit().hard_ratelimit(token.to_string());
                 Err(PushRequestError::TokenRatelimited)
             }
+            Err(PushError::PushEndpointTmp) => Err(PushRequestError::Internal),
+            Err(PushError::PushEndpointPersistent) => Err(PushRequestError::Internal),
             Err(e) => {
                 debug!(
                     "{}: Blocking token {} due to error: {}",
@@ -48,7 +49,9 @@ pub async fn handle_push_request(
                     token,
                     e
                 );
-                push_module.blocklist().block(token);
+                push_module
+                    .blocklist()
+                    .block_after_unhandled_push_error(token);
                 Err(PushRequestError::Internal)
             }
         }

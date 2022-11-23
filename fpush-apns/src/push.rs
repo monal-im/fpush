@@ -72,26 +72,32 @@ impl PushTrait for FpushApns {
                     "Got response {} from apple for token {}",
                     response.code, token
                 );
-                match response.code {
-                    200 => Ok(()),
-                    400 => Err(PushError::PushEndpointPersistent),
-                    403 => Err(PushError::PushEndpointPersistent),
-                    // TODO: check reason for 403 return code
-                    405 => Err(PushError::PushEndpointPersistent),
-                    410 => Err(PushError::TokenBlocked),
-                    429 => Err(PushError::TokenRateLimited),
-                    500 => Err(PushError::PushEndpointTmp),
-                    503 => Err(PushError::PushEndpointTmp),
-                    ecode => {
-                        error!("Received unhandled error code from apple apns: {}", ecode);
-                        Err(PushError::Unkown(ecode))
-                    }
-                }
+                response_code_to_push_error(response.code)
             }
             Err(e) => {
+                if let a2::Error::ResponseError(response) = e {
+                    return response_code_to_push_error(response.code);
+                }
                 error!("Could not send apns message to apple: {}", e);
                 Err(PushError::PushEndpointTmp)
             }
+        }
+    }
+}
+
+fn response_code_to_push_error(response_code: u16) -> PushResult<()> {
+    match response_code {
+        200 => Ok(()),
+        400 => Err(PushError::PushEndpointPersistent),
+        403 => Err(PushError::PushEndpointPersistent),
+        405 => Err(PushError::PushEndpointPersistent),
+        410 => Err(PushError::TokenBlocked),
+        429 => Err(PushError::TokenRateLimited),
+        500 => Err(PushError::PushEndpointTmp),
+        503 => Err(PushError::PushEndpointTmp),
+        ecode => {
+            error!("Received unhandled error code from apple apns: {}", ecode);
+            Err(PushError::Unkown(ecode))
         }
     }
 }
