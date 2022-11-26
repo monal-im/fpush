@@ -44,8 +44,8 @@ impl FpushPush {
                 self.push_modules.insert("default".to_string(), push_module);
             }
         }
-        if default_counter != 1 {
-            panic!("Exactly one push module has to be defined as the default module");
+        if default_counter > 1 {
+            panic!("At most one push module can be defined as the default module");
         }
     }
 
