@@ -82,7 +82,7 @@ If the `pushModule` identifier is missing in the publish-options, `fpush` will i
             }
         },
         "someAndroidApp": {
-            "type": "fcm",
+            "type": "google",
             "is_default_module": false,
             "fcm": {
                 "fcmSecretPath": "<Path to json from google>"
@@ -127,7 +127,7 @@ Each push module is identified by the key specified in the map.
 This identifier is later used by clients to specifiy which of the configured push modules should be selected when an XMPP IQ is received by `fpush`.
 
 Each push module consists of a `type` element.
-Currently `apple` and `fcm` are supported.
+Currently `apple` and `google` are supported.
 
 #### `is_default_module`
 
@@ -297,4 +297,5 @@ Environment=RUST_LOG=info
 ExecStart=/opt/fpush/fpush settings.json
 
 [Install]
+WantedBy=multi-user.target
 ```
