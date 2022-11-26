@@ -3,7 +3,7 @@ use crate::error::{PushRequestError, PushRequestResult};
 use crate::push_module::PushModuleEnum;
 use fpush_traits::push::PushError;
 
-use log::debug;
+use log::{info, warn};
 
 #[inline(always)]
 pub async fn handle_push_request(
@@ -20,7 +20,7 @@ pub async fn handle_push_request(
     {
         match push_module.send(token.to_string()).await {
             Ok(()) => {
-                debug!(
+                info!(
                     "{}: Send push message to token {}",
                     push_module.identifier(),
                     token
@@ -28,7 +28,7 @@ pub async fn handle_push_request(
                 Ok(())
             }
             Err(PushError::TokenBlocked) => {
-                debug!(
+                info!(
                     "{}: Received push request from blocked token {}",
                     push_module.identifier(),
                     token,
@@ -43,7 +43,7 @@ pub async fn handle_push_request(
             Err(PushError::PushEndpointTmp) => Err(PushRequestError::Internal),
             Err(PushError::PushEndpointPersistent) => Err(PushRequestError::Internal),
             Err(e) => {
-                debug!(
+                warn!(
                     "{}: Blocking token {} due to error: {}",
                     push_module.identifier(),
                     token,
@@ -56,7 +56,7 @@ pub async fn handle_push_request(
             }
         }
     } else {
-        debug!(
+        info!(
             "{}: Ignoring push request for token {} due to ratelimit",
             push_module.identifier(),
             token,
