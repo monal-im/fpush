@@ -12,8 +12,6 @@ use tokio::sync::mpsc;
 use tokio_xmpp::Component;
 use xmpp_parsers::{iq::Iq, pubsub::PubSub, Element, Jid};
 
-use super::error_messages::send_wait_iq;
-
 pub(crate) async fn init_component_connection(config: &FpushConfig) -> Result<Component> {
     let component = Component::new(
         config.component().component_hostname(),
@@ -145,7 +143,10 @@ async fn handle_push_result(
 ) {
     match push_result {
         Ok(()) => send_ack_iq(conn, &iq_id, from, to).await,
-        Err(PushRequestError::TokenRatelimited) => send_wait_iq(conn, &iq_id, from, to).await,
+        Err(PushRequestError::TokenRatelimited) => {
+            // Some admins did not understood the wait_iq -> we know send an ack
+            send_ack_iq(conn, &iq_id, from, to).await
+        }
         Err(PushRequestError::TokenBlocked) => {
             warn!(
                 "{}: Received push request from blocked token {} from {}",
