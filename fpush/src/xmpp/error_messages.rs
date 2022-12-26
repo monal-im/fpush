@@ -13,26 +13,6 @@ pub async fn send_ack_iq(conn: &mpsc::Sender<Iq>, id: &str, jid: Jid, from: Jid)
 }
 
 #[inline(always)]
-pub async fn send_wait_iq(conn: &mpsc::Sender<Iq>, id: &str, jid: Jid, from: Jid) {
-    let error_stanza = StanzaError::new(
-        xmpp_parsers::stanza_error::ErrorType::Wait,
-        xmpp_parsers::stanza_error::DefinedCondition::ResourceConstraint,
-        "en",
-        "Ratelimit reached",
-    );
-    if let Err(e) = conn
-        .send(
-            Iq::from_error((*id).to_string(), error_stanza)
-                .with_to(jid)
-                .with_from(from),
-        )
-        .await
-    {
-        error!("Could not forward outgoing iq to main handler: {}", e);
-    }
-}
-
-#[inline(always)]
 pub async fn send_error_policy_iq(conn: &mpsc::Sender<Iq>, id: &str, jid: Jid, from: Jid) {
     let error_stanza = StanzaError::new(
         xmpp_parsers::stanza_error::ErrorType::Cancel,
