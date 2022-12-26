@@ -4,18 +4,16 @@ version = 3
 
 [[package]]
 name = "a2"
-version = "0.6.2"
-source = "git+https://github.com/monal-im/apns2.git#89cf0b578cb2a253f8239c7a36de3de516f96607"
+version = "0.7.0"
+source = "git+https://github.com/monal-im/apns2.git?branch=faltheide/sync#7ebf2c21f8ba47679370bc3828c048b8ebbbfeac"
 dependencies = [
- "base64",
- "futures",
+ "base64 0.20.0",
+ "erased-serde",
  "http",
  "hyper",
  "hyper-alpn",
- "log 0.4.17",
  "openssl",
  "serde",
- "serde_derive",
  "serde_json",
  "thiserror",
 ]
@@ -68,6 +66,12 @@ name = "base64"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
+
+[[package]]
+name = "base64"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
 
 [[package]]
 name = "bitflags"
@@ -288,6 +292,15 @@ dependencies = [
  "log 0.4.17",
  "regex",
  "termcolor",
+]
+
+[[package]]
+name = "erased-serde"
+version = "0.3.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4ca605381c017ec7a5fef5e548f1cfaa419ed0f6df6367339300db74c92aa7d"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -1253,7 +1266,7 @@ version = "0.11.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68cc60575865c7831548863cc02356512e3f1dc2f3f82cb837d7fc4cc8f3c97c"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -1349,7 +1362,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ee86d63972a7c661d1536fefe8c3c8407321c3df668891286de28abcd087360"
 dependencies = [
- "base64",
+ "base64 0.13.1",
 ]
 
 [[package]]
@@ -1358,7 +1371,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0864aeff53f8c05aa08d86e5ef839d3dfcf07aeba2db32f12db0ef716e87bd55"
 dependencies = [
- "base64",
+ "base64 0.13.1",
 ]
 
 [[package]]
@@ -1392,7 +1405,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "572d7dce028927bbc1cde21a93c6a1f4d7a1a7cc0e643d418a2864800a362dc9"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "getrandom",
  "hmac",
  "pbkdf2",
@@ -2277,7 +2290,7 @@ name = "xmpp-parsers"
 version = "0.19.2"
 source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#92819ccbed2ee05fa4ceb176c42663b2085ee0ac"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "blake2",
  "chrono",
  "digest 0.10.6",
@@ -2296,7 +2309,7 @@ checksum = "98748970d2ddf05253e6525810d989740334aa7509457864048a829902db76f3"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64",
+ "base64 0.13.1",
  "futures",
  "http",
  "hyper",
