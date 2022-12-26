@@ -1,4 +1,5 @@
 use crate::config::fpush_config::FpushConfig;
+use crate::xmpp::error_messages::send_wait_iq_reason_old_prosody;
 use crate::{
     error::{Error, Result},
     xmpp::error_messages::{send_ack_iq, send_error_iq, send_error_policy_iq},
@@ -118,6 +119,7 @@ async fn handle_iq(conn: &mpsc::Sender<Iq>, push_modules: FpushPushArc, stanza: 
                         "Could not retrieve token or module_id: {} source: {}",
                         e, from
                     );
+                    send_wait_iq_reason_old_prosody(conn, &iq.id, from, to).await;
                     return;
                 }
             };
