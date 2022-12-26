@@ -1,7 +1,9 @@
 use std::time::SystemTime;
 
-use a2::{Client, NotificationOptions, Priority, PushType};
-use a2::{LocalizedNotificationBuilder, NotificationBuilder};
+use a2::{
+    Client, DefaultNotificationBuilder, NotificationBuilder, NotificationOptions, Priority,
+    PushType,
+};
 use fpush_traits::push::{PushError, PushResult, PushTrait};
 
 use async_trait::async_trait;
@@ -46,10 +48,11 @@ impl FpushApns {
 impl PushTrait for FpushApns {
     #[inline(always)]
     async fn send(&self, token: String) -> PushResult<()> {
-        let mut notification_builder =
-            LocalizedNotificationBuilder::new("New Message", "New Message?");
-        notification_builder.set_mutable_content();
-        notification_builder.set_sound("default");
+        let notification_builder = DefaultNotificationBuilder::new()
+            .set_title("New Message")
+            .set_body("New Message?")
+            .set_mutable_content()
+            .set_sound("default");
         let payload = notification_builder.build(
             &token,
             NotificationOptions {
