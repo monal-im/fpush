@@ -53,7 +53,7 @@ impl PushTrait for FpushApns {
             .set_body("New Message?")
             .set_mutable_content()
             .set_sound("default");
-        let payload = notification_builder.build(
+        let mut payload = notification_builder.build(
             &token,
             NotificationOptions {
                 apns_priority: Some(Priority::High),
@@ -65,6 +65,8 @@ impl PushTrait for FpushApns {
                 ..Default::default()
             },
         );
+        payload.add_custom_data("firstGoodBuildNumber", &"0").unwrap();
+        payload.add_custom_data("knownGoodBuildNumber", &[ 0 ]).unwrap();
         log::debug!(
             "Payload send to apple: {}",
             payload.clone().to_json_string().unwrap()
