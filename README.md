@@ -89,14 +89,14 @@ If the `pushModule` identifier is missing in the publish-options, `fpush` will i
             }
         },
     },
-    "timeoutConfig": {
+    "timeout": {
         "xmppconnectionError": "20s" // time to wait after XMPP component connection failed before reconnecting
     }
 }
 ```
 
 The configuration file consists of three sections.
-XMPP component settings (`component`) the push module configurations (`pushModules`) and a timeout config for the xmpp connection (`timeoutConfig`).
+XMPP component settings (`component`) the push module configurations (`pushModules`) and a timeout config for the xmpp connection (`timeout`).
 
 ### `component`
 
@@ -179,7 +179,7 @@ This section describes all fcm related push options.
 
 Path to the fcm json file created by google.
 
-### `timeoutConfig`
+### `timeout`
 
 #### `xmppconnectionError`
 
