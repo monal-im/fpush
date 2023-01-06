@@ -25,7 +25,7 @@ serde_derive = "^1.0"
 serde = { version = "^1.0", features = ["derive"] }
 serde-humantime = "^0.1"
 
-tokio = { version = "^1.0", features = ["time"] }
+tokio = { version = "^1.23", features = ["time"] }
 futures = "^0.3"
 derive_more = "^0.99"
 
