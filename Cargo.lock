@@ -35,9 +35,9 @@ checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
 
 [[package]]
 name = "async-trait"
-version = "0.1.60"
+version = "0.1.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "677d1d8ab452a3936018a687b20e6f7cf5363d713b732b8884001317b0e48aa3"
+checksum = "705339e0e4a9690e2908d2b3d049d85682cf19fbd5782494498fbf7003a6a282"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -859,7 +859,7 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 [[package]]
 name = "jid"
 version = "0.9.4"
-source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#92819ccbed2ee05fa4ceb176c42663b2085ee0ac"
+source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#3992c1d4f423667d17a1316075a9cbce736955e5"
 dependencies = [
  "minidom",
 ]
@@ -973,7 +973,7 @@ checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
 [[package]]
 name = "minidom"
 version = "0.15.0"
-source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#92819ccbed2ee05fa4ceb176c42663b2085ee0ac"
+source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#3992c1d4f423667d17a1316075a9cbce736955e5"
 dependencies = [
  "rxml",
 ]
@@ -1048,9 +1048,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.16.0"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
+checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 
 [[package]]
 name = "opaque-debug"
@@ -1476,9 +1476,9 @@ checksum = "58bc9567378fc7690d6b2addae4e60ac2eeea07becb2c64b9f218b53865cba2a"
 
 [[package]]
 name = "serde"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fed41fc1a24994d044e6db6935e69511a1153b52c15eb42493b26fa87feba0"
+checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
 dependencies = [
  "serde_derive",
 ]
@@ -1495,9 +1495,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.151"
+version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "255abe9a125a985c05190d687b320c12f9b1f0b99445e608c21ba0782c719ad8"
+checksum = "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1745,9 +1745,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.23.0"
+version = "1.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab6d665857cc6ca78d6e80303a02cea7a7851e85dfbd77cbdc09bd129f1ef46"
+checksum = "1d9f76183f91ecfb55e1d7d5602bd1d979e38a3a522fe900241cf195624d67ae"
 dependencies = [
  "autocfg",
  "bytes",
@@ -1837,7 +1837,7 @@ dependencies = [
 [[package]]
 name = "tokio-xmpp"
 version = "3.2.0"
-source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#92819ccbed2ee05fa4ceb176c42663b2085ee0ac"
+source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#3992c1d4f423667d17a1316075a9cbce736955e5"
 dependencies = [
  "bytes",
  "futures",
@@ -1943,9 +1943,9 @@ dependencies = [
 
 [[package]]
 name = "try-lock"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
+checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
 
 [[package]]
 name = "typenum"
@@ -2274,7 +2274,7 @@ dependencies = [
 [[package]]
 name = "xmpp"
 version = "0.3.0"
-source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#92819ccbed2ee05fa4ceb176c42663b2085ee0ac"
+source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#3992c1d4f423667d17a1316075a9cbce736955e5"
 dependencies = [
  "futures",
  "log 0.4.17",
@@ -2288,9 +2288,9 @@ dependencies = [
 [[package]]
 name = "xmpp-parsers"
 version = "0.19.2"
-source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#92819ccbed2ee05fa4ceb176c42663b2085ee0ac"
+source = "git+https://gitlab.com/xmpp-rs/xmpp-rs.git#3992c1d4f423667d17a1316075a9cbce736955e5"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.20.0",
  "blake2",
  "chrono",
  "digest 0.10.6",
