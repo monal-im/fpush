@@ -29,7 +29,7 @@ impl FpushApns {
         match Client::certificate(
             &mut certificate,
             apns_config.cert_password(),
-            a2::Endpoint::Production,
+            apns_config.endpoint(),
         ) {
             Ok(apns_conn) => {
                 let wrapped_conn = Self {
