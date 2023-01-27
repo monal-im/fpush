@@ -171,6 +171,10 @@ Passwort of the p12 certificate.
 
 Bundle ID of the main app.
 
+##### `environment`
+
+APNS environment to use. Supports `production` and `sandbox`. Default: `production`
+
 #### `fcm`
 
 This section describes all fcm related push options.
