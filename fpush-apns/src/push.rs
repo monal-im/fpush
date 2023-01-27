@@ -78,10 +78,10 @@ impl PushTrait for FpushApns {
                 response_code_to_push_error(response.code)
             }
             Err(e) => {
+                error!("Could not send apns message to apple: {}", e);
                 if let a2::Error::ResponseError(response) = e {
                     return response_code_to_push_error(response.code);
                 }
-                error!("Could not send apns message to apple: {}", e);
                 Err(PushError::PushEndpointTmp)
             }
         }
