@@ -44,10 +44,10 @@ This appserver implements [XEP-0357](https://xmpp.org/extensions/xep-0357.html) 
 Hence, push messages can be enabled by a client at their XMPP server as follows:
 ```XML
 <iq type='set' id='x43'>
-  <enable xmlns='urn:xmpp:push:0' jid='<pushServerComponentJid>' node='<DevicePushToken>'>
+  <enable xmlns='urn:xmpp:push:0' jid='###pushServerComponentJid###' node='###DevicePushToken###'>
     <x xmlns='jabber:x:data' type='submit'>
       <field var='FORM_TYPE'><value>http://jabber.org/protocol/pubsub#publish-options</value></field>
-      <field var='pushModule'><value>appProductionPushModule</value></field>
+      <field var='pushModule'><value>##pushModuleName###</value></field>
     </x>
   </enable>
 </iq>
