@@ -11,11 +11,11 @@ async-trait = "^0.1"
 
 serde_derive = "^1.0"
 serde = { version = "^1.0", features = ["derive"] }
-serde_json = "1.0.85"
+serde_json = "1.0"
 
-google-fcm1 = "4.0.1"
-hyper-rustls = "0.23.0"
-hyper = { version = "0.14.20", features = ["client", "http2"] }
+google-fcm1 = "5.0.2"
+hyper-rustls = "0.24"
+hyper = { version = "0.14", features = ["client", "http2"] }
 
 fpush-traits = { path = "../fpush-traits" }
 tokio = { version = "1", features = ["full"] }

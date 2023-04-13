@@ -12,7 +12,7 @@ serde_derive = "^1.0"
 serde = { version = "^1.0", features = ["derive"] }
 serde-humantime = "^0.1"
 
-dashmap = "^5.2"
+dashmap = "^5.4"
 
 tokio = { version = "^1", features = ["time"] }
 
