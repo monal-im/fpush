@@ -14,7 +14,7 @@ serde = { version = "^1.0", features = ["derive"] }
 serde_json = "1.0"
 
 google-fcm1 = "5.0.2"
-hyper-rustls = "0.24"
+hyper-rustls = { version = "0.24", features = ["http2"] }
 hyper = { version = "0.14", features = ["client", "http2"] }
 
 fpush-traits = { path = "../fpush-traits" }
