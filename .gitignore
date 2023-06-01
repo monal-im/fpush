@@ -108,3 +108,6 @@ tags
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,macos,rust,visualstudiocode,vim
 
+# Nix
+/result
+/.direnv
