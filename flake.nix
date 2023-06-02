@@ -33,6 +33,7 @@
       {
         packages.default = craneLib.buildPackage ({
           meta = { mainProgram = "fpush"; };
+          cargoExtraArgs = "--all-features";
          } // commonArgs);
 
         devShells = {
