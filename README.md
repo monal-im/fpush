@@ -225,7 +225,7 @@ cargo build --release
 <a name="compilation-flags"></a>
 ### Compilation Flags
 
-`fpush` supports several features that can be activated while building using the `--feature <Flag1>,<Flag2>` flag.
+`fpush` supports several features that can be activated while building using the `--features <Flag1>,<Flag2>` flag.
 
 #### Default features
 
