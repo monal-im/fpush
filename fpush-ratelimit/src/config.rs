@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::time::Duration;
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct RatelimitSettings {
     #[serde(deserialize_with = "serde_humantime")]
     pub hard_ratelimit_time: Duration,
