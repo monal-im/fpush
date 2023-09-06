@@ -10,7 +10,7 @@ pub enum PushError {
     PushEndpointPersistent,
     TokenRateLimited,
     TokenBlocked,
-    Unkown(u16),
+    Unknown(u16),
 }
 
 #[async_trait]

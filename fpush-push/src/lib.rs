@@ -99,8 +99,8 @@ impl FpushPush {
         if let Some(push_module) = self.push_modules.get(module_id) {
             handle_push_request(push_module.value(), token).await
         } else {
-            debug!("Unkown push_module requested: {}", module_id);
-            Err(PushRequestError::UnkownPushModule)
+            debug!("Unknown push_module requested: {}", module_id);
+            Err(PushRequestError::UnknownPushModule)
         }
     }
 }
