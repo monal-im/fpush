@@ -163,9 +163,9 @@ async fn handle_push_result(
             );
             send_error_iq(conn, &iq_id, from, to).await;
         }
-        Err(PushRequestError::UnkownPushModule) => {
+        Err(PushRequestError::UnknownPushModule) => {
             warn!(
-                "{}: Unkown push module requested for token {} from {}",
+                "{}: Unknown push module requested for token {} from {}",
                 module_id, token, from
             );
             send_error_iq(conn, &iq_id, from, to).await;

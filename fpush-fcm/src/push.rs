@@ -110,7 +110,7 @@ impl PushTrait for FpushFcm {
                         FcmErrorCode::Unavailable => Err(PushError::PushEndpointTmp),
                         FcmErrorCode::Internal => Err(PushError::PushEndpointTmp),
                         FcmErrorCode::SenderIdMismatch => Err(PushError::TokenBlocked),
-                        _ => Err(PushError::Unkown(u16::MAX)),
+                        _ => Err(PushError::Unknown(u16::MAX)),
                     }
                 } else {
                     Err(PushError::PushEndpointTmp)

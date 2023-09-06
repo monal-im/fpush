@@ -100,7 +100,7 @@ fn response_code_to_push_error(response_code: u16) -> PushResult<()> {
         503 => Err(PushError::PushEndpointTmp),
         ecode => {
             error!("Received unhandled error code from apple apns: {}", ecode);
-            Err(PushError::Unkown(ecode))
+            Err(PushError::Unknown(ecode))
         }
     }
 }

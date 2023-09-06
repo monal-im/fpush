@@ -7,7 +7,7 @@ pub enum PushRequestError {
     TokenRatelimited,
     TokenBlocked,
     Internal,
-    UnkownPushModule,
+    UnknownPushModule,
 }
 
 #[derive(Debug, From, Display)]
