@@ -1,5 +1,5 @@
-use std::time::SystemTime;
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use a2::{
     Client, DefaultNotificationBuilder, NotificationBuilder, NotificationOptions, Priority,
@@ -42,11 +42,14 @@ impl FpushApns {
                 };
                 Ok(wrapped_conn)
             }
-            Err(a2::error::Error::ReadError(_)) => Err(PushError::PushEndpointPersistent),
+            Err(a2::error::Error::ReadError(e)) => {
+                error!("Could not read apns: {}", e);
+                Err(PushError::PushEndpointPersistent)
+            }
             Err(e) => {
                 error!("Problem initializing apple config: {}", e);
                 Err(PushError::PushEndpointTmp)
-            },
+            }
         }
     }
 }
