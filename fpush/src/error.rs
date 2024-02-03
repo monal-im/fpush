@@ -4,6 +4,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, From, Display)]
 pub enum Error {
     Io(std::io::Error),
+    #[allow(clippy::enum_variant_names)]
     ConfigError(serde_json::Error),
     Config(String),
     Xmpp(Box<tokio_xmpp::Error>),

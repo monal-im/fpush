@@ -11,6 +11,7 @@ use log::{debug, error, info, warn};
 
 use tokio::sync::mpsc;
 use tokio_xmpp::Component;
+use xmpp_parsers::disco::DiscoInfoResult;
 use xmpp_parsers::{iq::Iq, pubsub::PubSub, Element, Jid};
 
 pub(crate) async fn init_component_connection(config: &FpushConfig) -> Result<Component> {
@@ -91,7 +92,33 @@ async fn handle_iq(conn: &mpsc::Sender<Iq>, push_modules: FpushPushArc, stanza: 
                     (to, from, iq_payload)
                 }
                 (Some(to), Some(from), xmpp_parsers::iq::IqType::Get(iq_payload)) => {
-                    if iq_payload.name() == "ping" {
+                    if iq_payload.name() == "query" {
+                        // handle disco
+                        if xmpp_parsers::disco::DiscoInfoQuery::try_from(iq_payload).is_err() {
+                            send_error_iq(conn, &iq.id, from, to).await;
+                            return;
+                        }
+                        info!("Handling disco info request from: {}", from);
+                        // handle disco
+                        let disco_info_result = DiscoInfoResult {
+                            node: None,
+                            identities: vec![],
+                            features: vec![xmpp_parsers::disco::Feature::new(
+                                "urn:xmpp:serverinfo:0",
+                            )],
+                            extensions: vec![],
+                        };
+                        if let Err(e) = conn
+                            .send(
+                                Iq::from_result(iq.id.to_owned(), Some(disco_info_result))
+                                    .with_from(to)
+                                    .with_to(from),
+                            )
+                            .await
+                        {
+                            error!("Could not forward disco info result iq to main handler: {}", e);
+                        }
+                    } else if iq_payload.name() == "ping" {
                         info!("Received ping from {}", from);
                         send_ack_iq(conn, &iq.id, from, to).await;
                     } else {
