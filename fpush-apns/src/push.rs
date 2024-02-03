@@ -38,8 +38,14 @@ impl FpushApns {
                 };
                 Ok(wrapped_conn)
             }
-            Err(a2::error::Error::ReadError(_)) => Err(PushError::PushEndpointPersistent),
-            Err(_) => Err(PushError::PushEndpointTmp),
+            Err(a2::error::Error::ReadError(e)) => {
+                error!("Could not read apns: {}", e);
+                Err(PushError::PushEndpointPersistent)
+            }
+            Err(e) => {
+                error!("Could not load cert apns: {}", e);
+                Err(PushError::PushEndpointTmp)
+            }
         }
     }
 }
