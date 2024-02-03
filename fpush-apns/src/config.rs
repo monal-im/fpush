@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use serde::Deserialize;
 use serde_json::Value;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,7 +32,7 @@ impl AppleApnsConfig {
             ApnsEndpoint::Sandbox => a2::Endpoint::Sandbox,
         }
     }
-    
+
     pub fn additional_data(&self) -> &Option<HashMap<String, Value>> {
         &self.additional_data
     }
