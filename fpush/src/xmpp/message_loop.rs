@@ -116,7 +116,10 @@ async fn handle_iq(conn: &mpsc::Sender<Iq>, push_modules: FpushPushArc, stanza: 
                             )
                             .await
                         {
-                            error!("Could not forward disco info result iq to main handler: {}", e);
+                            error!(
+                                "Could not forward disco info result iq to main handler: {}",
+                                e
+                            );
                         }
                     } else if iq_payload.name() == "ping" {
                         info!("Received ping from {}", from);
