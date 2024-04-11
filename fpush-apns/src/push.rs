@@ -39,7 +39,10 @@ impl FpushApns {
                 Ok(wrapped_conn)
             }
             Err(a2::error::Error::ReadError(_)) => Err(PushError::PushEndpointPersistent),
-            Err(_) => Err(PushError::PushEndpointTmp),
+            Err(e) => {
+                error!("Problem initializing apple config: {}", e);
+                Err(PushError::PushEndpointTmp)
+            },
         }
     }
 }
