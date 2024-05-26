@@ -1,4 +1,5 @@
 use std::time::SystemTime;
+use std::collections::HashMap;
 
 use a2::{
     Client, DefaultNotificationBuilder, NotificationBuilder, NotificationOptions, Priority,
@@ -8,11 +9,13 @@ use fpush_traits::push::{PushError, PushResult, PushTrait};
 
 use async_trait::async_trait;
 use log::{debug, error};
+use serde_json::Value;
 
 use crate::AppleApnsConfig;
 pub struct FpushApns {
     apns: a2::client::Client,
     topic: String,
+    additional_data: Option<HashMap<String, Value>>,
 }
 
 impl FpushApns {
@@ -35,6 +38,7 @@ impl FpushApns {
                 let wrapped_conn = Self {
                     apns: apns_conn,
                     topic: apns_config.topic().to_string(),
+                    additional_data: apns_config.additional_data().clone(),
                 };
                 Ok(wrapped_conn)
             }
@@ -56,7 +60,7 @@ impl PushTrait for FpushApns {
             .set_body("New Message?")
             .set_mutable_content()
             .set_sound("default");
-        let payload = notification_builder.build(
+        let mut payload = notification_builder.build(
             &token,
             NotificationOptions {
                 apns_priority: Some(Priority::High),
@@ -68,6 +72,14 @@ impl PushTrait for FpushApns {
                 ..Default::default()
             },
         );
+        match &self.additional_data {
+            None => {}
+            Some(additional_data) => {
+                for (key, value) in additional_data {
+                    payload.add_custom_data(key, value).unwrap();
+                }
+            }
+        }
         log::debug!(
             "Payload send to apple: {}",
             payload.clone().to_json_string().unwrap()
