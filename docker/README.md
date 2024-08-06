@@ -22,3 +22,15 @@ docker run --init -d \
 
 Note: Apple's p12 and/or Google's json file need to be mounted into the
 container as you can see in the example above.
+
+Additionally, Apple's p12 file may comes with outdated cipher suites 
+which are only support by the OpenSSL legacy provider from version `3.3.3`
+on. To make such a p12 file compatibile, you can use the following commands:
+
+```shell
+$ openssl pkcs12 -legacy -in apple-old.p12 -nodes -out p12-decrypted.tmp
+(enter passphrases if prompted)
+$ openssl pkcs12 -in p12-decrypted.tmp -export -out apple-new.p12
+(enter passphrases if prompted)
+$ rm p12-decrypted.tmp
+```
