@@ -18,3 +18,51 @@ minidom = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git" }
 tokio-xmpp = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git" }
 xmpp-parsers = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git" }
 xmpp = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git" }
+
+[workspace.dependencies]
+log = { version = "^0.4" }
+env_logger = { version = "^0.11" }
+
+derive-getters = { version = "^0.5" }
+
+serde_derive = { version = "^1.0" }
+serde = { version = "^1.0", features = ["derive"] }
+serde-humantime = { version = "^0.1" }
+serde_json = { version = "1.0" }
+
+tokio = { version = "^1.39" }
+futures = { version = "^0.3" }
+derive_more = { version = "^1.0", features = ["from", "display"] }
+
+dashmap = { version = "^6.0" }
+
+rand = { version = "^0.8", features = ["std_rng"] }
+
+google-fcm1 = { version = "5.0.2" }
+hyper-rustls = { version = "0.24", features = ["http2"] }
+hyper = { version = "0.14", features = ["client", "http2"] }
+
+a2 = { git = "https://github.com/monal-im/apns2.git", branch = "faltheide/sync" }
+
+async-trait = { version = "^0.1" }
+
+xmpp = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git", default-features = false }
+tokio-xmpp = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git", default-features = false }
+xmpp-parsers = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git" }
+
+fpush-ratelimit = { path = "./fpush-ratelimit" }
+fpush-tokenblocker = { path = "./fpush-tokenblocker" }
+fpush-traits = { path = "./fpush-traits" }
+fpush-apns = { path = "./fpush-apns" }
+fpush-fcm = { path = "./fpush-fcm" }
+fpush-demopush = { path = "./fpush-demopush" }
+fpush-push = { path = "./fpush-push" }
+
+[workspace.features]
+
+release_max_level_warn = ["log/release_max_level_warn"]
+release_max_level_info = ["log/release_max_level_info"]
+
+monal_prod = ["fpush-push/random_delay_before_push", "release_max_level_info", "fpush-push/enable_apns_support"]
+monal_debug = ["fpush-push/random_delay_before_push", "fpush-push/enable_apns_support", "fpush-push/enable_fcm_support"]
+default = ["monal_debug"]

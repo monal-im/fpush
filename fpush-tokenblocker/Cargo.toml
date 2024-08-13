@@ -13,7 +13,3 @@ serde = { version = "^1.0", features = ["derive"] }
 serde-humantime = "^0.1"
 
 dashmap = "^5.4"
-
-[features]
-release_max_level_warn = ["log/release_max_level_warn"]
-release_max_level_info = ["log/release_max_level_info"]

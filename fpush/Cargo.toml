@@ -3,7 +3,6 @@ name = "fpush"
 version = "0.1.0"
 edition = "2021"
 
-
 [profile.relase]
 lto = true
 
@@ -13,28 +12,24 @@ lto = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "^0.4"
-env_logger = "^0.10"
-serde_json = "^1.0"
+log.workspace = true
+env_logger.workspace = true
+serde_json.workspace = true
 
-derive-getters = "^0.3"
+derive-getters.workspace = true
 
-serde_derive = "^1.0"
-serde = { version = "^1.0", features = ["derive"] }
-serde-humantime = "^0.1"
+serde_derive.workspace = true
+serde.workspace = true
+serde-humantime.workspace = true
 
-tokio = { version = "^1.0", features = ["time"] }
-futures = "^0.3"
-derive_more = "^0.99"
+tokio = { workspace = true, features = ["time"] }
+futures.workspace = true
+derive_more.workspace = true
 
-xmpp = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git", default-features = false }
-tokio-xmpp = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git", default-features = false }
-xmpp-parsers = { git = "https://gitlab.com/xmpp-rs/xmpp-rs.git", features = ["component"] }
+xmpp = { workspace = true, default-features = false }
+tokio-xmpp = { workspace = true, default-features = false, features = ["insecure-tcp", "dns"] }
+xmpp-parsers = { workspace = true, features = ["component"] }
 
-fpush-push = { path = "../fpush-push" }
+fpush-push.workspace = true
 
-async-trait = "^0.1"
-
-[features]
-release_max_level_warn = ["log/release_max_level_warn"]
-release_max_level_info = ["log/release_max_level_info"]
+async-trait.workspace = true
