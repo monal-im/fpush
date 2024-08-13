@@ -103,7 +103,13 @@ impl PushTrait for FpushFcm {
             Err(e) => {
                 warn!("FCM returned {}", e);
                 if let google_fcm1::client::Error::BadRequest(error_body) = e {
-                    let parsed_error_body: FcmError = serde_json::from_value(error_body).unwrap();
+                    let parsed_error_body: FcmError = match serde_json::from_value(error_body) {
+                        Ok(body) => body,
+                        Err(e) => {
+                            error!("Could parse fcm response: {}", e);
+                            return Err(PushError::PushEndpointTmp);
+                        }
+                    };
                     match parsed_error_body.error_code() {
                         FcmErrorCode::Unregistered => Err(PushError::TokenBlocked),
                         FcmErrorCode::QuotaExceeded => Err(PushError::TokenRateLimited),
