@@ -10,16 +10,22 @@ use futures::{SinkExt, StreamExt};
 use log::{debug, error, info, warn};
 
 use tokio::sync::mpsc;
+use tokio_xmpp::connect::{DnsConfig, TcpServerConnector};
 use tokio_xmpp::Component;
+use xmpp::agent::Element;
 use xmpp_parsers::disco::DiscoInfoResult;
-use xmpp_parsers::{iq::Iq, pubsub::PubSub, Element, Jid};
+use xmpp_parsers::{iq::Iq, jid::Jid, pubsub::PubSub};
 
-pub(crate) async fn init_component_connection(config: &FpushConfig) -> Result<Component> {
-    let component = Component::new(
+pub(crate) async fn init_component_connection(
+    config: &FpushConfig,
+) -> Result<Component<TcpServerConnector>> {
+    let component = Component::new_plaintext(
         config.component().component_hostname(),
         config.component().component_key(),
-        config.component().server_hostname(),
-        *config.component().server_port(),
+        DnsConfig::no_srv(
+            config.component().server_hostname(),
+            *config.component().server_port(),
+        ),
     )
     .await?;
 
@@ -28,7 +34,7 @@ pub(crate) async fn init_component_connection(config: &FpushConfig) -> Result<Co
 
 #[inline(always)]
 pub(crate) async fn message_loop_main_thread(
-    mut conn: tokio_xmpp::Component,
+    mut conn: tokio_xmpp::Component<TcpServerConnector>,
     push_modules: FpushPushArc,
 ) {
     // #[cfg(feature = "random_delay_before_push")]
@@ -219,15 +225,15 @@ fn parse_token_and_module_id(iq_payload: Element) -> Result<(String, String)> {
                     if data_forms.fields.len() > 5 {
                         return Err(Error::PubSubToManyPublishOptions);
                     }
-                    for field in data_forms.fields {
-                        if field.var == "pushModule" {
-                            if field.values.len() != 1 {
-                                return Err(Error::PubSubInvalidPushModuleConfiguration);
+                    for field in &data_forms.fields {
+                        match field.var {
+                            Some(ref field_var_name) if field_var_name == "pushModule" => {
+                                if let Some(push_module_id) = field.values.first() {
+                                    return Ok((push_module_id.to_string(), pubsub_payload.node.0));
+                                }
                             }
-                            if let Some(push_module_id) = field.values.first() {
-                                return Ok((push_module_id.to_string(), pubsub_payload.node.0));
-                            } else {
-                                unreachable!();
+                            None | Some(_) => {
+                                return Err(Error::PubSubInvalidPushModuleConfiguration);
                             }
                         }
                     }

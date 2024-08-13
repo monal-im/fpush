@@ -6,43 +6,37 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "^0.4"
+log.workspace = true
 
-derive-getters = "^0.3"
+derive-getters.workspace = true
+derive_more.workspace = true
 
-serde_derive = "^1.0"
-serde = { version = "^1.0", features = ["derive"] }
-serde-humantime = "^0.1"
+serde_derive.workspace = true
+serde.workspace = true
+serde-humantime.workspace = true
 
-tokio = { version = "^1.0", features = ["time"] }
-futures = "^0.3"
-derive_more = "^0.99"
+tokio = { workspace = true, features = ["time"] }
+futures.workspace = true
 
-dashmap = "^5.2"
+dashmap.workspace = true
 
-rand = { version = "^0.8", features = ["std_rng"], optional = true }
+rand = { workspace = true, features = ["std_rng"], optional = true }
 
-async-trait = "^0.1"
+async-trait.workspace = true
 
-fpush-ratelimit = { path = "../fpush-ratelimit" }
-fpush-tokenblocker = { path = "../fpush-tokenblocker" }
+fpush-ratelimit.workspace = true
+fpush-tokenblocker.workspace = true
 
-fpush-traits = { path = "../fpush-traits" }
-fpush-apns = { path = "../fpush-apns", optional = true }
-fpush-fcm = { path = "../fpush-fcm", optional = true }
-fpush-demopush = { path = "../fpush-demopush", optional = true }
+fpush-traits.workspace = true
+fpush-apns = { workspace = true, optional = true }
+fpush-fcm = { workspace = true, optional = true }
+fpush-demopush = { workspace = true, optional = true }
 
 [features]
-release_max_level_warn = ["log/release_max_level_warn"]
-release_max_level_info = ["log/release_max_level_info"]
-
 random_delay_before_push = ["rand"]
 
 enable_fcm_support = ["fpush-fcm"]
 enable_apns_support = ["fpush-apns"]
 enable_demo_support = ["fpush-demopush"]
 
-monal_prod = ["random_delay_before_push", "release_max_level_info", "enable_apns_support"]
-monal_debug = ["random_delay_before_push", "enable_apns_support", "enable_fcm_support"]
-
-default = ["monal_debug"]
+default = ["enable_fcm_support", "enable_apns_support", "enable_demo_support"]
