@@ -6,5 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "^0.1"
-derive_more = "^0.99"
+async-trait.workspace = true
+derive_more.workspace = true

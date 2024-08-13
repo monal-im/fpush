@@ -1,6 +1,7 @@
 use log::error;
 use tokio::sync::mpsc;
-use xmpp_parsers::{iq::Iq, stanza_error::StanzaError, Jid};
+use xmpp::jid::Jid;
+use xmpp_parsers::{iq::Iq, stanza_error::StanzaError};
 
 #[inline(always)]
 pub async fn send_ack_iq(conn: &mpsc::Sender<Iq>, id: &str, jid: Jid, from: Jid) {
