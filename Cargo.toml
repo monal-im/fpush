@@ -42,7 +42,7 @@ google-fcm1 = { version = "5.0.2" }
 hyper-rustls = { version = "0.24", features = ["http2"] }
 hyper = { version = "0.14", features = ["client", "http2"] }
 
-a2 = { git = "https://github.com/monal-im/apns2.git", branch = "faltheide/sync" }
+a2 = { version = "0.10" }
 
 async-trait = { version = "^0.1" }
 

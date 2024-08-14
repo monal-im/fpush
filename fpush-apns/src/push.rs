@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use a2::{
-    Client, DefaultNotificationBuilder, NotificationBuilder, NotificationOptions, Priority,
-    PushType,
+    request::payload::PayloadLike, Client, ClientConfig, DefaultNotificationBuilder,
+    NotificationBuilder, NotificationOptions, Priority, PushType,
 };
 use fpush_traits::push::{PushError, PushResult, PushTrait};
 
@@ -29,11 +29,12 @@ impl FpushApns {
 
     pub fn init(apns_config: &AppleApnsConfig) -> PushResult<Self> {
         let mut certificate = FpushApns::open_cert(apns_config.cert_file_path())?;
-        match Client::certificate(
-            &mut certificate,
-            apns_config.cert_password(),
-            apns_config.endpoint(),
-        ) {
+
+        let mut client_config = ClientConfig::new(apns_config.endpoint());
+        client_config.pool_idle_timeout_secs = Some(apns_config.pool_idle_timeout());
+        client_config.request_timeout_secs = Some(apns_config.request_timeout());
+
+        match Client::certificate(&mut certificate, apns_config.cert_password(), client_config) {
             Ok(apns_conn) => {
                 let wrapped_conn = Self {
                     apns: apns_conn,
@@ -71,7 +72,7 @@ impl PushTrait for FpushApns {
                 apns_expiration: Some(
                     SystemTime::now().elapsed().unwrap().as_secs() + 4 * 7 * 24 * 3600,
                 ),
-                apns_push_type: PushType::Alert,
+                apns_push_type: Some(PushType::Alert),
                 ..Default::default()
             },
         );
