@@ -2,21 +2,17 @@
   description = "Scalable push server for XMPP";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    crane.url = "github:ipetkov/crane";
+    crane.inputs.nixpkgs.follows = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    crane = {
-      url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = { self, nixpkgs, flake-utils, crane }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-        };
-        craneLib = crane.lib.${system};
+        pkgs = nixpkgs.legacyPackages.${system};
+        craneLib = crane.mkLib pkgs;
 
         commonArgs = {
           src = craneLib.cleanCargoSource ./.;
@@ -36,21 +32,19 @@
           cargoExtraArgs = "--all-features";
          } // commonArgs);
 
-        devShells = {
-          default = pkgs.mkShell {
-
-            buildInputs = [ ] ++ commonArgs.buildInputs;
-            nativeBuildInputs = builtins.attrValues
-              {
-                inherit (pkgs) cargo rustc nixpkgs-fmt shellcheck rnix-lsp;
-              } ++ [
-              # This is required to prevent a mangled bash shell in nix develop
-              # see: https://discourse.nixos.org/t/interactive-bash-with-nix-develop-flake/15486
-              (pkgs.hiPrio pkgs.bashInteractive)
-
-            ] ++ commonArgs.nativeBuildInputs;
-          };
-        };
+         devShells = {
+           default = pkgs.mkShell {
+             buildInputs = [ ] ++ commonArgs.buildInputs;
+             nativeBuildInputs = builtins.attrValues
+               {
+                 inherit (pkgs) cargo rustc fmt cargo-udeps cargo-outdated cargo-audit;
+               } ++ [
+               # This is required to prevent a mangled bash shell in nix develop
+               # see: https://discourse.nixos.org/t/interactive-bash-with-nix-develop-flake/15486
+               (pkgs.hiPrio pkgs.bashInteractive)
+             ] ++ commonArgs.nativeBuildInputs;
+           };
+         };
       }
     );
 }

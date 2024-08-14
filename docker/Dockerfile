@@ -1,21 +1,37 @@
-### alternative tag is e.g. '1.72.0'
-ARG RUST_VSN='stable'
+# based on https://mitchellh.com/writing/nix-with-dockerfiles
 
-##### Build
-FROM docker.io/clux/muslrust:${RUST_VSN} as builder
+# Nix builder
+FROM nixos/nix:latest AS builder
 
-COPY / ./
-RUN cargo build --release
+# Copy our source and setup our working dir.
+COPY . /tmp/build
+WORKDIR /tmp/build
 
-RUN mkdir -p /rootfs/etc/fpush \
- && mv $(find target/ -name fpush -type f -executable) /rootfs/fpush \
- && touch /rootfs/etc/fpush/settings.json
+RUN nix-channel --update
 
-##### Runtime
-FROM gcr.io/distroless/static-debian12:nonroot AS prod
+# Build our Nix environment
+RUN nix \
+    --extra-experimental-features "nix-command flakes" \
+    --option filter-syscalls false \
+    build
 
-COPY --from=builder /rootfs /
+# Copy the Nix store closure into a directory. The Nix store closure is the
+# entire set of Nix store values that we need for our build.
+RUN mkdir /tmp/nix-store-closure
+RUN mkdir /tmp/app
+RUN cp -R $(nix-store -qR result/) /tmp/nix-store-closure \
+    && ln -s $(readlink -f result)/ /tmp/app/fpush
+
+# Final image is based on scratch. We copy a bunch of Nix dependencies
+# but they're fully self-contained so we don't need Nix anymore.
+FROM scratch
+
+WORKDIR /app
+
+# Copy /nix/store
+COPY --from=builder /tmp/nix-store-closure /nix/store
+COPY --from=builder /tmp/app /app
 
 ENV RUST_LOG=info
 
-ENTRYPOINT ["/fpush","/etc/fpush/settings.json"]
+ENTRYPOINT ["/app/fpush/bin/fpush", "/etc/fpush/settings.json"]
