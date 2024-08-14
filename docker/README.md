@@ -5,7 +5,7 @@ This folder holds an example Dockerfile.
 To build the image, run the following command from the root of this repository:
 
 ```bash
-docker build -t localhost/fpush:latest -f docker/Dockerfile .
+docker buildx build -t localhost/fpush:latest -f docker/Dockerfile .
 ```
 
 Run the image with:
