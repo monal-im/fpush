@@ -1,43 +1,37 @@
-ARG RUST_VSN='1.78'
+# based on https://mitchellh.com/writing/nix-with-dockerfiles
 
-##### Build
-FROM cgr.dev/chainguard/wolfi-base as builder
-ARG RUST_VSN
+# Nix builder
+FROM nixos/nix:latest AS builder
 
-RUN apk -U upgrade && apk add --no-cache \
-        build-base \
-        openssl-dev \
-        pax-utils \
-        rust-$RUST_VSN
+# Copy our source and setup our working dir.
+COPY . /tmp/build
+WORKDIR /tmp/build
 
-WORKDIR /fpush
-COPY / ./
-RUN cargo build --release
+RUN nix-channel --update
 
-RUN mkdir -p /rootfs/etc/fpush \
- && mv $(find target/ -name fpush -type f -executable) /rootfs/fpush \
- && touch /rootfs/etc/fpush/settings.json \
- && scanelf --needed --nobanner --format '%n#p' --recursive "$PWD" \
-    | tr ',' '\n' \
-    | sort -u \
-    | awk 'system("[ -e $PWD" $1 " ]") == 0 { next } { print "so:" $1 }' \
-        > /rootfs/runDeps
+# Build our Nix environment
+RUN nix \
+    --extra-experimental-features "nix-command flakes" \
+    --option filter-syscalls false \
+    build
 
-##### Runtime
-FROM cgr.dev/chainguard/wolfi-base AS release
-COPY --from=builder /rootfs /
+# Copy the Nix store closure into a directory. The Nix store closure is the
+# entire set of Nix store values that we need for our build.
+RUN mkdir /tmp/nix-store-closure
+RUN mkdir /tmp/app
+RUN cp -R $(nix-store -qR result/) /tmp/nix-store-closure \
+    && ln -s $(readlink -f result)/ /tmp/app/fpush
 
-RUN apk -U upgrade && apk add --no-cache \
-        $(cat /runDeps) \
-        tini \
- && apk del --repositories-file /dev/null \
-        apk-tools \
-        busybox \
-        wolfi-base \
-        wolfi-keys \
-        zlib
+# Final image is based on chainguard/static. We copy Nix dependencies
+# but they're fully self-contained so we don't need Nix anymore.
+FROM cgr.dev/chainguard/static:latest
 
-ENV RUST_LOG="info"
+WORKDIR /app
 
-ENTRYPOINT ["/sbin/tini","--"]
-CMD ["/fpush","/etc/fpush/settings.json"]
+# Copy /nix/store
+COPY --from=builder /tmp/nix-store-closure /nix/store
+COPY --from=builder /tmp/app /app
+
+ENV RUST_LOG=info
+
+ENTRYPOINT ["/app/fpush/bin/fpush", "/etc/fpush/settings.json"]

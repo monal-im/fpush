@@ -10,15 +10,22 @@ use futures::{SinkExt, StreamExt};
 use log::{debug, error, info, warn};
 
 use tokio::sync::mpsc;
+use tokio_xmpp::connect::{DnsConfig, TcpServerConnector};
 use tokio_xmpp::Component;
-use xmpp_parsers::{iq::Iq, pubsub::PubSub, Element, Jid};
+use xmpp::agent::Element;
+use xmpp_parsers::disco::DiscoInfoResult;
+use xmpp_parsers::{iq::Iq, jid::Jid, pubsub::PubSub};
 
-pub(crate) async fn init_component_connection(config: &FpushConfig) -> Result<Component> {
-    let component = Component::new(
+pub(crate) async fn init_component_connection(
+    config: &FpushConfig,
+) -> Result<Component<TcpServerConnector>> {
+    let component = Component::new_plaintext(
         config.component().component_hostname(),
         config.component().component_key(),
-        config.component().server_hostname(),
-        *config.component().server_port(),
+        DnsConfig::no_srv(
+            config.component().server_hostname(),
+            *config.component().server_port(),
+        ),
     )
     .await?;
 
@@ -27,7 +34,7 @@ pub(crate) async fn init_component_connection(config: &FpushConfig) -> Result<Co
 
 #[inline(always)]
 pub(crate) async fn message_loop_main_thread(
-    mut conn: tokio_xmpp::Component,
+    mut conn: tokio_xmpp::Component<TcpServerConnector>,
     push_modules: FpushPushArc,
 ) {
     // #[cfg(feature = "random_delay_before_push")]
@@ -91,7 +98,36 @@ async fn handle_iq(conn: &mpsc::Sender<Iq>, push_modules: FpushPushArc, stanza: 
                     (to, from, iq_payload)
                 }
                 (Some(to), Some(from), xmpp_parsers::iq::IqType::Get(iq_payload)) => {
-                    if iq_payload.name() == "ping" {
+                    if iq_payload.name() == "query" {
+                        // handle disco
+                        if xmpp_parsers::disco::DiscoInfoQuery::try_from(iq_payload).is_err() {
+                            send_error_iq(conn, &iq.id, from, to).await;
+                            return;
+                        }
+                        info!("Handling disco info request from: {}", from);
+                        // handle disco
+                        let disco_info_result = DiscoInfoResult {
+                            node: None,
+                            identities: vec![],
+                            features: vec![xmpp_parsers::disco::Feature::new(
+                                "urn:xmpp:serverinfo:0",
+                            )],
+                            extensions: vec![],
+                        };
+                        if let Err(e) = conn
+                            .send(
+                                Iq::from_result(iq.id.to_owned(), Some(disco_info_result))
+                                    .with_from(to)
+                                    .with_to(from),
+                            )
+                            .await
+                        {
+                            error!(
+                                "Could not forward disco info result iq to main handler: {}",
+                                e
+                            );
+                        }
+                    } else if iq_payload.name() == "ping" {
                         info!("Received ping from {}", from);
                         send_ack_iq(conn, &iq.id, from, to).await;
                     } else {
@@ -189,15 +225,15 @@ fn parse_token_and_module_id(iq_payload: Element) -> Result<(String, String)> {
                     if data_forms.fields.len() > 5 {
                         return Err(Error::PubSubToManyPublishOptions);
                     }
-                    for field in data_forms.fields {
-                        if field.var == "pushModule" {
-                            if field.values.len() != 1 {
-                                return Err(Error::PubSubInvalidPushModuleConfiguration);
+                    for field in &data_forms.fields {
+                        match field.var {
+                            Some(ref field_var_name) if field_var_name == "pushModule" => {
+                                if let Some(push_module_id) = field.values.first() {
+                                    return Ok((push_module_id.to_string(), pubsub_payload.node.0));
+                                }
                             }
-                            if let Some(push_module_id) = field.values.first() {
-                                return Ok((push_module_id.to_string(), pubsub_payload.node.0));
-                            } else {
-                                unreachable!();
+                            None | Some(_) => {
+                                return Err(Error::PubSubInvalidPushModuleConfiguration);
                             }
                         }
                     }
