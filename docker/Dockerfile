@@ -22,9 +22,9 @@ RUN mkdir /tmp/app
 RUN cp -R $(nix-store -qR result/) /tmp/nix-store-closure \
     && ln -s $(readlink -f result)/ /tmp/app/fpush
 
-# Final image is based on scratch. We copy a bunch of Nix dependencies
+# Final image is based on chainguard/static. We copy Nix dependencies
 # but they're fully self-contained so we don't need Nix anymore.
-FROM scratch
+FROM cgr.dev/chainguard/static:latest
 
 WORKDIR /app
 
