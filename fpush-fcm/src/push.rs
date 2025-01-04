@@ -61,14 +61,27 @@ impl FpushFcm {
 }
 
 #[derive(Debug, Deserialize)]
-struct FcmError {
-    error_code: FcmErrorCode,
+struct FcmErrorResponse {
+    error: FcmErrorDetails,
 }
 
-impl FcmError {
-    pub fn error_code(&self) -> &FcmErrorCode {
-        &self.error_code
-    }
+#[derive(Debug, Deserialize)]
+struct FcmErrorDetails {
+    code: u16,
+    details: Vec<FcmErrorDetail>,
+    #[allow(dead_code)]
+    message: String,
+    #[allow(dead_code)]
+    status: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct FcmErrorDetail {
+    #[allow(dead_code)]
+    #[serde(rename = "@type")]
+    type_url: String,
+    #[serde(rename = "errorCode")]
+    error_code: FcmErrorCode,
 }
 
 #[derive(Debug, Deserialize)]
@@ -103,20 +116,26 @@ impl PushTrait for FpushFcm {
             Err(e) => {
                 warn!("FCM returned {}", e);
                 if let google_fcm1::client::Error::BadRequest(error_body) = e {
-                    let parsed_error_body: FcmError = match serde_json::from_value(error_body) {
-                        Ok(body) => body,
-                        Err(e) => {
-                            error!("Could parse fcm response: {}", e);
-                            return Err(PushError::PushEndpointTmp);
+                    let parsed_error_body: FcmErrorResponse =
+                        match serde_json::from_value(error_body) {
+                            Ok(body) => body,
+                            Err(e) => {
+                                error!("Could not parse fcm response: {}", e);
+                                return Err(PushError::PushEndpointTmp);
+                            }
+                        };
+                    // Get the first error code if available
+                    if let Some(detail) = parsed_error_body.error.details.first() {
+                        match detail.error_code {
+                            FcmErrorCode::Unregistered => Err(PushError::TokenBlocked),
+                            FcmErrorCode::QuotaExceeded => Err(PushError::TokenRateLimited),
+                            FcmErrorCode::Unavailable => Err(PushError::PushEndpointTmp),
+                            FcmErrorCode::Internal => Err(PushError::PushEndpointTmp),
+                            FcmErrorCode::SenderIdMismatch => Err(PushError::TokenBlocked),
+                            _ => Err(PushError::Unknown(u16::MAX)),
                         }
-                    };
-                    match parsed_error_body.error_code() {
-                        FcmErrorCode::Unregistered => Err(PushError::TokenBlocked),
-                        FcmErrorCode::QuotaExceeded => Err(PushError::TokenRateLimited),
-                        FcmErrorCode::Unavailable => Err(PushError::PushEndpointTmp),
-                        FcmErrorCode::Internal => Err(PushError::PushEndpointTmp),
-                        FcmErrorCode::SenderIdMismatch => Err(PushError::TokenBlocked),
-                        _ => Err(PushError::Unknown(u16::MAX)),
+                    } else {
+                        Err(PushError::Unknown(parsed_error_body.error.code))
                     }
                 } else {
                     Err(PushError::PushEndpointTmp)
