@@ -14,8 +14,9 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
 google-fcm1.workspace = true
-hyper-rustls = { workspace = true, features = ["http2"] }
-hyper = { workspace = true, features = ["client", "http2"] }
+hyper-rustls = { workspace = true, features = ["http2", "ring"] }
+hyper = { workspace = true, features = ["http2"] }
+hyper-util = { workspace = true, features = ["client-legacy"] }
 
 fpush-traits.workspace = true
 tokio = { workspace = true, features = ["full"] }

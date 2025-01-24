@@ -31,6 +31,7 @@ serde-humantime = { version = "^0.1" }
 serde_json = { version = "1.0" }
 
 tokio = { version = "^1.39" }
+tokio-rustls = { version = "0.26.0", default-features = false, features = ["ring"] }
 futures = { version = "^0.3" }
 derive_more = { version = "^1.0", features = ["from", "display"] }
 
@@ -38,9 +39,10 @@ dashmap = { version = "^6.0" }
 
 rand = { version = "^0.8", features = ["std_rng"] }
 
-google-fcm1 = { version = "5.0.2" }
-hyper-rustls = { version = "0.24", features = ["http2"] }
-hyper = { version = "0.14", features = ["client", "http2"] }
+google-fcm1 = { version = "6.0" }
+hyper-rustls = { version = "0.27", features = ["http2", "ring"] }
+hyper = { version = "1.0", features = ["http2"] }
+hyper-util = { version = "0.1", features = ["client-legacy"] }
 
 a2 = { version = "0.10" }
 

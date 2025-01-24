@@ -14,6 +14,9 @@ fn setup_logging() {
 #[tokio::main]
 async fn main() {
     setup_logging();
+    tokio_rustls::rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
 
     // get settings name
     let args: Vec<String> = std::env::args().collect();

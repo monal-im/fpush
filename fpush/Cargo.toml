@@ -23,6 +23,7 @@ serde.workspace = true
 serde-humantime.workspace = true
 
 tokio = { workspace = true, features = ["time"] }
+tokio-rustls = { workspace = true, default-features = false, features = ["ring"] }
 futures.workspace = true
 derive_more.workspace = true
 

@@ -5,7 +5,7 @@ use fpush_traits::push::{PushError, PushResult, PushTrait};
 use async_trait::async_trait;
 use google_fcm1::{
     api::{Message, SendMessageRequest},
-    oauth2, FirebaseCloudMessaging,
+    hyper_rustls, hyper_util, yup_oauth2, FirebaseCloudMessaging,
 };
 use log::{error, warn};
 
@@ -13,14 +13,15 @@ use serde::Deserialize;
 
 use crate::config::GoogleFcmConfig;
 pub struct FpushFcm {
-    fcm_conn:
-        FirebaseCloudMessaging<hyper_rustls::HttpsConnector<hyper::client::connect::HttpConnector>>,
+    fcm_conn: FirebaseCloudMessaging<
+        hyper_rustls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector>,
+    >,
     fcm_parent: String,
 }
 
 impl FpushFcm {
-    async fn load_oauth2_app_secret(fcm_config: &GoogleFcmConfig) -> oauth2::ServiceAccountKey {
-        match oauth2::read_service_account_key(Path::new(fcm_config.fcm_secret_path())).await {
+    async fn load_oauth2_app_secret(fcm_config: &GoogleFcmConfig) -> yup_oauth2::ServiceAccountKey {
+        match yup_oauth2::read_service_account_key(Path::new(fcm_config.fcm_secret_path())).await {
             Ok(s) => s,
             Err(e) => panic!(
                 "Could not read fcm config file at {} reason: {}",
@@ -34,7 +35,7 @@ impl FpushFcm {
         let fcm_secret = Self::load_oauth2_app_secret(fcm_config).await;
 
         // create login auth object
-        let auth = match oauth2::ServiceAccountAuthenticator::builder(fcm_secret.clone())
+        let auth = match yup_oauth2::ServiceAccountAuthenticator::builder(fcm_secret.clone())
             .build()
             .await
         {
@@ -45,13 +46,16 @@ impl FpushFcm {
             }
         };
 
-        let hyper_client = hyper::Client::builder().build(
-            hyper_rustls::HttpsConnectorBuilder::new()
-                .with_native_roots()
-                .https_only()
-                .enable_http2()
-                .build(),
-        );
+        let hyper_client =
+            hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
+                .build(
+                    hyper_rustls::HttpsConnectorBuilder::new()
+                        .with_native_roots()
+                        .unwrap()
+                        .https_only()
+                        .enable_http2()
+                        .build(),
+                );
         let fcm_conn = FirebaseCloudMessaging::new(hyper_client, auth);
         Ok(Self {
             fcm_conn,
@@ -115,7 +119,7 @@ impl PushTrait for FpushFcm {
         match fcm_result {
             Err(e) => {
                 warn!("FCM returned {}", e);
-                if let google_fcm1::client::Error::BadRequest(error_body) = e {
+                if let google_fcm1::Error::BadRequest(error_body) = e {
                     let parsed_error_body: FcmErrorResponse =
                         match serde_json::from_value(error_body) {
                             Ok(body) => body,
