@@ -30,7 +30,7 @@ serde = { version = "^1.0", features = ["derive"] }
 serde-humantime = { version = "^0.1" }
 serde_json = { version = "1.0" }
 
-tokio = { version = "^1.39" }
+tokio = { version = "^1.43" }
 tokio-rustls = { version = "0.26.0", default-features = false, features = ["ring"] }
 futures = { version = "^0.3" }
 derive_more = { version = "^1.0", features = ["from", "display"] }
