@@ -5,8 +5,6 @@ use std::collections::HashMap;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppleApnsConfig {
-    cert_file_path: String,
-    cert_password: String,
     topic: String,
     additional_data: Option<HashMap<String, Value>>,
     #[serde(default = "ApnsEndpoint::production")]
@@ -15,15 +13,38 @@ pub struct AppleApnsConfig {
     pool_idle_timeout: u64,
     #[serde(default = "AppleApnsConfig::default_request_timeout")]
     request_timeout: u64,
+
+    // Certificate-based auth (p12)
+    cert_file_path: Option<String>,
+    cert_password: Option<String>,
+
+    // Token-based auth (p8)
+    key_path: Option<String>,
+    key_id: Option<String>,
+    team_id: Option<String>,
+}
+
+pub enum ApnsAuth<'a> {
+    Certificate { path: &'a str, password: &'a str },
+    Token { key_path: &'a str, key_id: &'a str, team_id: &'a str },
 }
 
 impl AppleApnsConfig {
-    pub fn cert_file_path(&self) -> &str {
-        &self.cert_file_path
-    }
-
-    pub fn cert_password(&self) -> &str {
-        &self.cert_password
+    pub fn auth(&self) -> Option<ApnsAuth<'_>> {
+        if let (Some(path), Some(password)) = (
+            self.cert_file_path.as_deref(),
+            self.cert_password.as_deref(),
+        ) {
+            return Some(ApnsAuth::Certificate { path, password });
+        }
+        if let (Some(key_path), Some(key_id), Some(team_id)) = (
+            self.key_path.as_deref(),
+            self.key_id.as_deref(),
+            self.team_id.as_deref(),
+        ) {
+            return Some(ApnsAuth::Token { key_path, key_id, team_id });
+        }
+        None
     }
 
     pub fn topic(&self) -> &str {

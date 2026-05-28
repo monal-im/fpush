@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use std::time::SystemTime;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use a2::{
-    request::payload::PayloadLike, Client, ClientConfig, DefaultNotificationBuilder,
-    NotificationBuilder, NotificationOptions, Priority, PushType,
+    request::notification::CollapseId, request::payload::PayloadLike, Client, ClientConfig,
+    DefaultNotificationBuilder, NotificationBuilder, NotificationOptions, Priority, PushType,
 };
 use fpush_traits::push::{PushError, PushResult, PushTrait};
 
@@ -11,7 +11,8 @@ use async_trait::async_trait;
 use log::{debug, error};
 use serde_json::Value;
 
-use crate::AppleApnsConfig;
+use crate::config::{ApnsAuth, AppleApnsConfig};
+
 pub struct FpushApns {
     apns: a2::client::Client,
     topic: String,
@@ -19,39 +20,44 @@ pub struct FpushApns {
 }
 
 impl FpushApns {
-    fn open_cert(filename: &str) -> PushResult<std::fs::File> {
-        if let Ok(file) = std::fs::File::open(filename) {
-            Ok(file)
-        } else {
-            Err(PushError::CertLoading)
-        }
+    fn open_file(filename: &str) -> PushResult<std::fs::File> {
+        std::fs::File::open(filename).map_err(|e| {
+            error!("Could not open file {}: {}", filename, e);
+            PushError::CertLoading
+        })
     }
 
     pub fn init(apns_config: &AppleApnsConfig) -> PushResult<Self> {
-        let mut certificate = FpushApns::open_cert(apns_config.cert_file_path())?;
-
         let mut client_config = ClientConfig::new(apns_config.endpoint());
         client_config.pool_idle_timeout_secs = Some(apns_config.pool_idle_timeout());
         client_config.request_timeout_secs = Some(apns_config.request_timeout());
 
-        match Client::certificate(&mut certificate, apns_config.cert_password(), client_config) {
-            Ok(apns_conn) => {
-                let wrapped_conn = Self {
-                    apns: apns_conn,
-                    topic: apns_config.topic().to_string(),
-                    additional_data: apns_config.additional_data().clone(),
-                };
-                Ok(wrapped_conn)
+        let apns_conn = match apns_config.auth() {
+            Some(ApnsAuth::Certificate { path, password }) => {
+                let mut cert_file = Self::open_file(path)?;
+                Client::certificate(&mut cert_file, password, client_config).map_err(|e| {
+                    error!("Problem initializing apple certificate config: {}", e);
+                    PushError::PushEndpointTmp
+                })?
             }
-            Err(a2::error::Error::ReadError(e)) => {
-                error!("Could not read apns: {}", e);
-                Err(PushError::PushEndpointPersistent)
+            Some(ApnsAuth::Token { key_path, key_id, team_id }) => {
+                let key_file = Self::open_file(key_path)?;
+                Client::token(key_file, key_id, team_id, client_config).map_err(|e| {
+                    error!("Problem initializing apple token config: {}", e);
+                    PushError::PushEndpointTmp
+                })?
             }
-            Err(e) => {
-                error!("Problem initializing apple config: {}", e);
-                Err(PushError::PushEndpointTmp)
+            None => {
+                error!("APNs config requires either (certFilePath + certPassword) or (keyPath + keyId + teamId)");
+                return Err(PushError::CertLoading);
             }
-        }
+        };
+
+        Ok(Self {
+            apns: apns_conn,
+            topic: apns_config.topic().to_string(),
+            additional_data: apns_config.additional_data().clone(),
+        })
     }
 }
 
@@ -59,20 +65,35 @@ impl FpushApns {
 impl PushTrait for FpushApns {
     #[inline(always)]
     async fn send(&self, token: String) -> PushResult<()> {
+        // APNs payload structure matches Signal-Server APNSender's APN_NSE_NOTIFICATION_PAYLOAD:
+        //   - mutable-content: 1 (wakes the NSE)
+        //   - alert title/body present so iOS shows something if NSE fails to replace it
+        //   - NO sound: the NSE-posted notification carries the user's chosen sound;
+        //     when NSE fails (and the fallback alert is what shows), match Signal's
+        //     silent-failure UX rather than inconsistent audio cues.
         let notification_builder = DefaultNotificationBuilder::new()
             .set_title("New Message")
             .set_body("New Message?")
-            .set_mutable_content()
-            .set_sound("default");
+            .set_mutable_content();
+        // Signal-Server uses apns-collapse-id "incoming-message" on every push.
+        // Effect: if NSE fails to post a user-visible notification (rare after
+        // recent NSE minimization work) AND multiple pushes arrive while the
+        // device is locked, the fallback alerts collapse to one entry on the
+        // lock screen instead of stacking N copies of "New Message". The
+        // per-conversation notifications NSE posts via UNUserNotificationCenter
+        // use their own identifiers and are unaffected.
+        let collapse_id = CollapseId::new("incoming-message")
+            .expect("collapse id literal fits the 64-byte limit");
         let mut payload = notification_builder.build(
             &token,
             NotificationOptions {
                 apns_priority: Some(Priority::High),
                 apns_topic: Some(&self.topic),
                 apns_expiration: Some(
-                    SystemTime::now().elapsed().unwrap().as_secs() + 4 * 7 * 24 * 3600,
+                    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + 4 * 7 * 24 * 3600,
                 ),
                 apns_push_type: Some(PushType::Alert),
+                apns_collapse_id: Some(collapse_id),
                 ..Default::default()
             },
         );
