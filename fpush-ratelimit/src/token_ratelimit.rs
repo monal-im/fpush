@@ -138,7 +138,7 @@ impl FpushTokenRateLimit {
 
     pub fn cleanup(&self) {
         self.ratelimit_map
-            .retain(|_, v| v.time_since_last_push() >= self.time_till_cleanup);
+            .retain(|_, v| v.time_since_last_push() <= self.time_till_cleanup);
     }
 }
 

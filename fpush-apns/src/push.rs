@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::SystemTime;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use a2::{
     request::payload::PayloadLike, Client, ClientConfig, DefaultNotificationBuilder,
@@ -70,7 +70,7 @@ impl PushTrait for FpushApns {
                 apns_priority: Some(Priority::High),
                 apns_topic: Some(&self.topic),
                 apns_expiration: Some(
-                    SystemTime::now().elapsed().unwrap().as_secs() + 4 * 7 * 24 * 3600,
+                    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + 4 * 7 * 24 * 3600,
                 ),
                 apns_push_type: Some(PushType::Alert),
                 ..Default::default()
