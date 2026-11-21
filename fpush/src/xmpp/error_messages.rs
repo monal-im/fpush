@@ -77,3 +77,23 @@ pub async fn send_wait_iq_reason_old_prosody(
         error!("Could not forward outgoing iq to main handler: {}", e);
     }
 }
+
+#[inline(always)]
+pub async fn send_error_wait_iq(conn: &mpsc::Sender<Iq>, id: &str, jid: Jid, from: Jid) {
+    let error_stanza = StanzaError::new(
+        xmpp_parsers::stanza_error::ErrorType::Wait,
+        xmpp_parsers::stanza_error::DefinedCondition::InternalServerError,
+        "en",
+        "Temporary push error",
+    );
+    if let Err(e) = conn
+        .send(
+            Iq::from_error((*id).to_string(), error_stanza)
+                .with_to(jid)
+                .with_from(from),
+        )
+        .await
+    {
+        error!("Could not forward outgoing iq to main handler: {}", e);
+    }
+}

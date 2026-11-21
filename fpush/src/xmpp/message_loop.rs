@@ -2,7 +2,7 @@ use crate::config::fpush_config::FpushConfig;
 use crate::xmpp::error_messages::send_wait_iq_reason_old_prosody;
 use crate::{
     error::{Error, Result},
-    xmpp::error_messages::{send_ack_iq, send_error_iq, send_error_policy_iq},
+    xmpp::error_messages::{send_ack_iq, send_error_iq, send_error_policy_iq, send_error_wait_iq},
 };
 use fpush_push::{FpushPushArc, PushRequestError, PushRequestResult};
 
@@ -192,19 +192,21 @@ async fn handle_push_result(
             );
             send_error_policy_iq(conn, &iq_id, from, to).await;
         }
+        // XMPP servers disable push for the device on any error that is not of
+        // type wait, so only errors caused by the token itself may use cancel.
         Err(PushRequestError::Internal) => {
             warn!(
                 "{}: Incountered internal push error for token {} from {}",
                 module_id, token, from
             );
-            send_error_iq(conn, &iq_id, from, to).await;
+            send_error_wait_iq(conn, &iq_id, from, to).await;
         }
         Err(PushRequestError::UnknownPushModule) => {
-            warn!(
+            error!(
                 "{}: Unknown push module requested for token {} from {}",
                 module_id, token, from
             );
-            send_error_iq(conn, &iq_id, from, to).await;
+            send_error_wait_iq(conn, &iq_id, from, to).await;
         }
     }
 }

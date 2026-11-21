@@ -55,6 +55,21 @@ Hence, push messages can be enabled by a client at their XMPP server as follows:
 
 If the `pushModule` identifier is missing in the publish-options, `fpush` will instead selected the default push module as configured.
 
+#### Error replies
+
+XMPP servers remove a device's push registration when the app server answers with an error that is not of type `wait` (ejabberd's `mod_push` and Prosody's `mod_cloud_notify` both do this).
+`fpush` therefore only uses `cancel` when the token itself is the problem:
+
+| Situation | Reply |
+|---|---|
+| Push sent, or dropped by the ratelimit | `result` |
+| Token reported invalid by APNS/FCM, or blocked for that reason | `cancel` / `policy-violation` |
+| Malformed push IQ | `cancel` / `bad-request` |
+| Push endpoint unreachable or temporary push error | `wait` / `internal-server-error` |
+| Token blocked after an unclassified push error | `wait` / `internal-server-error` |
+| `pushModule` not configured | `wait` / `internal-server-error` |
+| Publish options in an unexpected format | `wait` / `bad-request` |
+
 <a name="configuration"></a>
 ### Configuration
 
@@ -182,6 +197,10 @@ This section describes all fcm related push options.
 ##### `fcmSecretPath`
 
 Path to the fcm json file created by google.
+
+FCM pushes are sent as data-only messages with `android.priority` set to `HIGH` and a fixed `android.collapse_key`.
+Normal priority messages are held back by Android while the device is in Doze, so the app would not be woken until the next maintenance window.
+Since pushes carry no payload, the collapse key lets FCM keep only the latest one for devices that are offline.
 
 ### `timeout`
 
