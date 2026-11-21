@@ -72,20 +72,25 @@ struct FcmErrorResponse {
 #[derive(Debug, Deserialize)]
 struct FcmErrorDetails {
     code: u16,
+    #[serde(default)]
     details: Vec<FcmErrorDetail>,
     #[allow(dead_code)]
+    #[serde(default)]
     message: String,
     #[allow(dead_code)]
+    #[serde(default)]
     status: String,
 }
 
+// Only the google.firebase.fcm.v1.FcmError entry has an errorCode, other
+// detail types (e.g. google.rpc.BadRequest) can come along with it.
 #[derive(Debug, Deserialize)]
 struct FcmErrorDetail {
     #[allow(dead_code)]
-    #[serde(rename = "@type")]
+    #[serde(rename = "@type", default)]
     type_url: String,
-    #[serde(rename = "errorCode")]
-    error_code: FcmErrorCode,
+    #[serde(rename = "errorCode", default)]
+    error_code: Option<FcmErrorCode>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -99,6 +104,28 @@ enum FcmErrorCode {
     Unavailable,
     Internal,
     ThirdPartyAuthError,
+    #[serde(other)]
+    Other,
+}
+
+// Only errors caused by the token itself may block it. Outages, quota and our
+// own credentials are temporary and must not get the token blocked.
+fn map_fcm_error(error: &FcmErrorDetails) -> PushError {
+    match error.details.iter().find_map(|d| d.error_code.as_ref()) {
+        Some(FcmErrorCode::Unregistered) | Some(FcmErrorCode::SenderIdMismatch) => {
+            PushError::TokenBlocked
+        }
+        Some(FcmErrorCode::QuotaExceeded) => PushError::TokenRateLimited,
+        Some(FcmErrorCode::Unavailable)
+        | Some(FcmErrorCode::Internal)
+        | Some(FcmErrorCode::ThirdPartyAuthError) => PushError::PushEndpointTmp,
+        _ => match error.code {
+            404 => PushError::TokenBlocked,
+            429 => PushError::TokenRateLimited,
+            401 | 403 | 500..=599 => PushError::PushEndpointTmp,
+            code => PushError::Unknown(code),
+        },
+    }
 }
 
 #[async_trait]
@@ -117,33 +144,19 @@ impl PushTrait for FpushFcm {
             .doit()
             .await;
         match fcm_result {
+            Err(google_fcm1::Error::BadRequest(error_body)) => {
+                warn!("FCM returned {}", error_body);
+                match serde_json::from_value::<FcmErrorResponse>(error_body) {
+                    Ok(body) => Err(map_fcm_error(&body.error)),
+                    Err(e) => {
+                        error!("Could not parse fcm response: {}", e);
+                        Err(PushError::PushEndpointTmp)
+                    }
+                }
+            }
             Err(e) => {
                 warn!("FCM returned {}", e);
-                if let google_fcm1::Error::BadRequest(error_body) = e {
-                    let parsed_error_body: FcmErrorResponse =
-                        match serde_json::from_value(error_body) {
-                            Ok(body) => body,
-                            Err(e) => {
-                                error!("Could not parse fcm response: {}", e);
-                                return Err(PushError::PushEndpointTmp);
-                            }
-                        };
-                    // Get the first error code if available
-                    if let Some(detail) = parsed_error_body.error.details.first() {
-                        match detail.error_code {
-                            FcmErrorCode::Unregistered => Err(PushError::TokenBlocked),
-                            FcmErrorCode::QuotaExceeded => Err(PushError::TokenRateLimited),
-                            FcmErrorCode::Unavailable => Err(PushError::PushEndpointTmp),
-                            FcmErrorCode::Internal => Err(PushError::PushEndpointTmp),
-                            FcmErrorCode::SenderIdMismatch => Err(PushError::TokenBlocked),
-                            _ => Err(PushError::Unknown(u16::MAX)),
-                        }
-                    } else {
-                        Err(PushError::Unknown(parsed_error_body.error.code))
-                    }
-                } else {
-                    Err(PushError::PushEndpointTmp)
-                }
+                Err(PushError::PushEndpointTmp)
             }
             Ok(_) => Ok(()),
         }
@@ -178,5 +191,51 @@ mod tests {
         assert_eq!(msg["android"]["priority"], "HIGH");
         assert_eq!(msg["android"]["collapseKey"], "fpush");
         assert!(msg["notification"].is_null());
+    }
+
+    fn fcm_error(body: serde_json::Value) -> PushError {
+        map_fcm_error(
+            &serde_json::from_value::<FcmErrorResponse>(body)
+                .unwrap()
+                .error,
+        )
+    }
+
+    #[test]
+    fn unregistered_token_is_blocked() {
+        let err = fcm_error(serde_json::json!({"error": {
+            "code": 404, "message": "Requested entity was not found.", "status": "NOT_FOUND",
+            "details": [{"@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError",
+                         "errorCode": "UNREGISTERED"}]}}));
+        assert!(matches!(err, PushError::TokenBlocked));
+    }
+
+    #[test]
+    fn unavailable_is_temporary() {
+        let err = fcm_error(serde_json::json!({"error": {
+            "code": 503, "message": "The service is currently unavailable.", "status": "UNAVAILABLE",
+            "details": [{"@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError",
+                         "errorCode": "UNAVAILABLE"}]}}));
+        assert!(matches!(err, PushError::PushEndpointTmp));
+    }
+
+    #[test]
+    fn other_detail_types_and_unknown_codes() {
+        let err = fcm_error(serde_json::json!({"error": {
+            "code": 500, "message": "Internal error.", "status": "INTERNAL",
+            "details": [{"@type": "type.googleapis.com/google.rpc.BadRequest", "fieldViolations": []},
+                        {"@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError",
+                         "errorCode": "NOT_A_REAL_CODE"}]}}));
+        assert!(matches!(err, PushError::PushEndpointTmp));
+    }
+
+    #[test]
+    fn falls_back_to_http_status() {
+        let err = fcm_error(serde_json::json!({"error": {
+            "code": 503, "message": "", "status": "UNAVAILABLE"}}));
+        assert!(matches!(err, PushError::PushEndpointTmp));
+        let err = fcm_error(serde_json::json!({"error": {
+            "code": 400, "message": "", "status": "INVALID_ARGUMENT"}}));
+        assert!(matches!(err, PushError::Unknown(400)));
     }
 }
