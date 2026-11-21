@@ -4,7 +4,7 @@ use fpush_traits::push::{PushError, PushResult, PushTrait};
 
 use async_trait::async_trait;
 use google_fcm1::{
-    api::{Message, SendMessageRequest},
+    api::{AndroidConfig, Message, SendMessageRequest},
     hyper_rustls, hyper_util, yup_oauth2, FirebaseCloudMessaging,
 };
 use log::{error, warn};
@@ -155,6 +155,28 @@ fn create_push_message(token: String) -> Message {
     Message {
         data: Some(HashMap::new()),
         token: Some(token),
+        // Data-only messages default to normal priority, which Android defers while the
+        // device is in Doze. A wake-up is only useful if it arrives now.
+        android: Some(AndroidConfig {
+            priority: Some("HIGH".to_string()),
+            // Pushes carry no payload, so a device coming back online only needs one.
+            collapse_key: Some("fpush".to_string()),
+            ..Default::default()
+        }),
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn push_message_is_high_priority() {
+        let msg = serde_json::to_value(create_push_message("token".to_string())).unwrap();
+        assert_eq!(msg["token"], "token");
+        assert_eq!(msg["android"]["priority"], "HIGH");
+        assert_eq!(msg["android"]["collapseKey"], "fpush");
+        assert!(msg["notification"].is_null());
     }
 }

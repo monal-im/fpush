@@ -183,6 +183,10 @@ This section describes all fcm related push options.
 
 Path to the fcm json file created by google.
 
+FCM pushes are sent as data-only messages with `android.priority` set to `HIGH` and a fixed `android.collapse_key`.
+Normal priority messages are held back by Android while the device is in Doze, so the app would not be woken until the next maintenance window.
+Since pushes carry no payload, the collapse key lets FCM keep only the latest one for devices that are offline.
+
 ### `timeout`
 
 #### `xmppconnectionError`
