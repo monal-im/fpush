@@ -1,6 +1,7 @@
 use crate::error::{PushRequestError, PushRequestResult};
 
 use crate::push_module::PushModuleEnum;
+use fpush_tokenblocker::BlockReason;
 use fpush_traits::push::PushError;
 
 use log::{info, warn};
@@ -10,8 +11,11 @@ pub async fn handle_push_request(
     push_module: &PushModuleEnum,
     token: String,
 ) -> PushRequestResult<()> {
-    if push_module.blocklist().is_blocked(&token) {
-        return Err(PushRequestError::TokenBlocked);
+    match push_module.blocklist().blocked_reason(&token) {
+        Some(BlockReason::InvalidToken) => return Err(PushRequestError::TokenBlocked),
+        // the token may be fine, so this must not end up as a permanent error
+        Some(BlockReason::PushError) => return Err(PushRequestError::Internal),
+        None => {}
     }
     if push_module
         .ratelimit()
